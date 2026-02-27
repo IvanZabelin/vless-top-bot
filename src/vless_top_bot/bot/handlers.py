@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from aiogram import Router
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import BufferedInputFile, Message
 
 from vless_top_bot.adapters.storage.user_repo import UserRepo
 from vless_top_bot.services.check_service import CheckService
@@ -48,9 +48,17 @@ def build_router(user_repo: UserRepo, check_service: CheckService, defaults: dic
             concurrency=defaults["concurrency"],
         )
 
-        if links:
-            report += "\n\nТоп ссылки:\n" + "\n".join(links)
         await message.answer(report)
+
+        if links:
+            # 1) Отправляем txt-файл для удобного копирования/импорта
+            payload = ("\n".join(links) + "\n").encode("utf-8")
+            doc = BufferedInputFile(payload, filename="top_vless.txt")
+            await message.answer_document(doc, caption="ТОП ссылки файлом")
+
+            # 2) Дублируем каждую ссылку отдельным сообщением (удобно копировать с телефона)
+            for idx, link in enumerate(links, start=1):
+                await message.answer(f"Ключ {idx}:\n{link}")
 
     @router.message()
     async def catch_subscription_url(message: Message):
