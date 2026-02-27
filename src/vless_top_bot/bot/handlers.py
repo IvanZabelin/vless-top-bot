@@ -35,7 +35,7 @@ def build_router(user_repo: UserRepo, check_service: CheckService, defaults: dic
     async def cmd_check(message: Message):
         sub = user_repo.get_subscription(message.from_user.id)
         if not sub:
-            await message.answer("Сначала задай подписку: /setsub <url>")
+            await message.answer("Сначала задай подписку: /setsub <url> или просто отправь URL сообщением")
             return
 
         await message.answer("Запускаю проверку, это может занять до минуты…")
@@ -51,5 +51,12 @@ def build_router(user_repo: UserRepo, check_service: CheckService, defaults: dic
         if links:
             report += "\n\nТоп ссылки:\n" + "\n".join(links)
         await message.answer(report)
+
+    @router.message()
+    async def catch_subscription_url(message: Message):
+        text = (message.text or "").strip()
+        if text.startswith("http://") or text.startswith("https://"):
+            user_repo.set_subscription(message.from_user.id, text)
+            await message.answer("Сохранил подписку ✅ Теперь запусти /check")
 
     return router
