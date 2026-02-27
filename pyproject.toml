@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vless-top-bot"
+version = "0.1.0"
+description = "Telegram bot to rank VLESS nodes by TCP latency"
+requires-python = ">=3.10"
+dependencies = [
+  "aiogram>=3.4,<4",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+vless-top-bot = "vless_top_bot.__main__:main"
