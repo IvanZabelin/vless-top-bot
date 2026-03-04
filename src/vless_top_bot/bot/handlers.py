@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile, Message
+
+logger = logging.getLogger(__name__)
 
 from vless_top_bot.adapters.storage.user_repo import UserRepo
 from vless_top_bot.services.check_service import CheckService
@@ -39,26 +43,41 @@ def build_router(user_repo: UserRepo, check_service: CheckService, defaults: dic
             return
 
         await message.answer("Запускаю проверку, это может занять до минуты…")
-        report, links = await check_service.run_check(
-            subscription_url=sub,
-            top=defaults["top"],
-            attempts=defaults["attempts"],
-            timeout=defaults["timeout"],
-            fetch_timeout=defaults["fetch_timeout"],
-            concurrency=defaults["concurrency"],
-        )
+        try:
+            report, links = await check_service.run_check(
+                subscription_url=sub,
+                top=defaults["top"],
+                attempts=defaults["attempts"],
+                timeout=defaults["timeout"],
+                fetch_timeout=defaults["fetch_timeout"],
+                concurrency=defaults["concurrency"],
+                youtube_check_timeout=defaults["youtube_check_timeout"],
+                youtube_tunnel_start_timeout=defaults["youtube_tunnel_start_timeout"],
+                youtube_strict_mode=defaults["youtube_strict_mode"],
+                youtube_strict_attempts=defaults["youtube_strict_attempts"],
+            )
+        except Exception:
+            await message.answer("Проверка упала по таймауту/сети. Попробуй ещё раз через минуту.")
+            return
 
         await message.answer(report)
 
         if links:
-            # 1) Отправляем txt-файл для удобного копирования/импорта
+            # 1) Пытаемся отправить txt-файл для удобного копирования/импорта
             payload = ("\n".join(links) + "\n").encode("utf-8")
             doc = BufferedInputFile(payload, filename="top_vless.txt")
-            await message.answer_document(doc, caption="ТОП ссылки файлом")
+            try:
+                await message.answer_document(doc, caption="ТОП ссылки файлом")
+            except Exception as e:
+                logger.exception("Не удалось отправить файл top_vless.txt")
+                await message.answer(f"Не смог отправить файл со ссылками: {e}")
 
-            # 2) Дублируем каждую ссылку отдельным сообщением (удобно копировать с телефона)
+            # 2) Дублируем каждую ссылку отдельным сообщением (даже если файл не ушёл)
             for idx, link in enumerate(links, start=1):
-                await message.answer(f"Ключ {idx}:\n{link}")
+                try:
+                    await message.answer(f"Ключ {idx}:\n{link}")
+                except Exception:
+                    logger.exception("Не удалось отправить ключ %s", idx)
 
     @router.message()
     async def catch_subscription_url(message: Message):

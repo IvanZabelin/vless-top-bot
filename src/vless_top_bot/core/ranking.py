@@ -14,7 +14,7 @@ def top_nodes(ok_results, top_n: int) -> list[Node]:
     return [n for (n, _, _) in ok_results[:top_n]]
 
 
-def render_report(total: int, ok_results, bad_results, top_n: int) -> str:
+def render_report(total: int, ok_results, bad_results, top_n: int, youtube_status: dict[str, str] | None = None) -> str:
     lines = [
         f"Всего узлов: {total}",
         f"Доступны: {len(ok_results)}",
@@ -23,7 +23,10 @@ def render_report(total: int, ok_results, bad_results, top_n: int) -> str:
         f"ТОП-{top_n} по TCP latency:",
     ]
 
+    youtube_status = youtube_status or {}
     for i, (n, ms, succ) in enumerate(ok_results[:top_n], 1):
-        lines.append(f"{i}. {ms:.1f} ms ({succ} ok) {n.name} -> {n.host}:{n.port}")
+        yt = youtube_status.get(n.raw)
+        yt_suffix = f" | YouTube: {yt}" if yt else ""
+        lines.append(f"{i}. {ms:.1f} ms ({succ} ok) {n.name} -> {n.host}:{n.port}{yt_suffix}")
 
     return "\n".join(lines)

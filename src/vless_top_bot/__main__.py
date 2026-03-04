@@ -28,6 +28,10 @@ def main() -> None:
             "timeout": settings.default_timeout,
             "fetch_timeout": settings.default_fetch_timeout,
             "concurrency": settings.default_concurrency,
+            "youtube_check_timeout": settings.youtube_check_timeout,
+            "youtube_tunnel_start_timeout": settings.youtube_tunnel_start_timeout,
+            "youtube_strict_mode": settings.youtube_strict_mode,
+            "youtube_strict_attempts": settings.youtube_strict_attempts,
         },
     )
     dp.include_router(router)
